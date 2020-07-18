@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <script  src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+        <script  src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
+        <script  src="http://code.jquery.com/jquery-latest.js"></script>   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="sever.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css" type="text/css" rel="Stylesheet" />
+        <script  src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+        <script  src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
+       <script >
+         let current_user = null;
+        let current_room = "home";
+        let current_admin = null;
+        let to_room_pass=null;
+
+
+        function login(){
+            socketio.emit("add_new_log_user", document.getElementById("user").value);
+    }
+
+            var socketio = io.connect();
+            socketio.on("valid_user",function(data){
+                current_user = data;
+                if(current_user!=null&&current_user!=""){
+            $("#login_div").hide();
+            $("#room_list_div").show();
+            $("#user_list_div").show();
+            $("#chat_div").show();
+            $("#welcome").show()
+            $("#input_div").show();
+            
+            let wel = document.getElementById("welcome");
+            while(wel.firstChild){
+                    wel.removeChild(wel.firstChild);
+                
+                }
+            document.getElementById("welcome").appendChild(document.createTextNode("Welcome "+current_user+"! You are now in the Room: "+current_room));
+            
+            
+            socketio.emit("add_new_user_to_client",{user:current_user,room:current_room});
+            socketio.emit("update_all",{room:current_room} );
+
+        }else{
+            alert("Invalid username!")
+        }
+            });
+            socketio.on("update_all", function(data){
+                let wel = document.getElementById("welcome");
+                while(wel.firstChild){
+                    wel.removeChild(wel.firstChild);
+                }
+                document.getElementById("welcome").appendChild(document.createTextNode("Welcome "+current_user+"! You are now in the Room: "+current_room));
+                console.log("update all");
+                socketio.emit("request_room_list", {});
+                socketio.emit("request_user_list",{room:current_room} );
+               
+                
+            });
+            socketio.on("message_to_client",function(data) {
+                let to = data['to'];
+                //if(the room is the right room show the message)
+                if(data["room"]==current_room){
+               //Append an HR thematic break and the escaped HTML of the new message
+               if((to==null||to=="")||(to==current_user||current_user==data['user'])){
+                   document.getElementById("chat_div").appendChild(document.createElement("hr"));
+                    document.getElementById("chat_div").appendChild(document.createTextNode(data['user']+": "+data['message']));
+                }
+                }
+            });
+            socketio.on("createNew_to_client",function(data) {
+                let old_list= document.getElementById("rooms")
+                
+                while(old_list.firstChild){
+                    old_list.removeChild(old_list.firstChild);
+                }
+                //cosole.log(data);
+                for( i in data){
+                    
+                    let room = data[i]['name'];
+                    let radio_button=document.createElement("input");
+                    radio_button.setAttribute("id",room);
+                    radio_button.setAttribute("type","radio");
+                    radio_button.setAttribute("onchange","changeRoom()");
+                    document.getElementById("rooms").appendChild(document.createTextNode(room));
+                    document.getElementById("rooms").appendChild(radio_button);
+                    document.getElementById("rooms").appendChild(document.createElement("br"));
+                }
+            });
+            socketio.on("changeRoom_to_client", function (data){
+                
+                current_room = data['room'];
+                if(current_room=="home"){
+                    $("#invite").hide();
+                }
+                else{
+                    $("#invite").show();
+                }
+                current_admin = data['admin'];
+                if(current_admin==current_user){
+                    $("#admin_stuff").show();
+                }else{
+                    $("#admin_stuff").hide();
+                }
+                let chat = document.getElementById("chat_div");
+                while(chat.firstChild){
+                    chat.removeChild(chat.firstChild);
+                }
+                socketio.emit("update_all",{});
+                
+            });
+            socketio.on("post_user_list2",function(data){
+                let old_list= document.getElementById("invite_list");
+                while(old_list.firstChild){
+                    old_list.removeChild(old_list.firstChild);
+                }
+               
+                for( i in data){
+                    let user = data[i];
+                    let username = document.createElement("input");
+                    username.setAttribute("id",user);
+                    username.setAttribute("class","class");
+                    username.setAttribute("type", "checkbox");
+                    username.setAttribute("value",user);
+                    document.getElementById("invite_list").appendChild(document.createTextNode(user));
+                    document.getElementById("invite_list").appendChild(username);
+                    document.getElementById("invite_list").appendChild(document.createElement("br"));
+                }
+
+                $("#invite_list_div").dialog();
+                    
+                  
+            });
+            socketio.on("post_user_list",function(data){
+                let old_list= document.getElementById("users")
+                while(old_list.firstChild){
+                    old_list.removeChild(old_list.firstChild);
+                }
+               
+                for( i in data){
+                   if(current_admin==current_user){
+                    let user = data[i];
+                   
+                    let username = document.createElement("input");
+                    username.setAttribute("id","user");
+                    username.setAttribute("type", "button")
+                    username.setAttribute("onclick","kick(this.value)");
+                    username.setAttribute("value",user);
+                    document.getElementById("users").appendChild(document.createTextNode("kick out:"));
+                    document.getElementById("users").appendChild(username);
+                    document.getElementById("users").appendChild(document.createElement("br"));
+                   } 
+                   else{ 
+                    let user = data[i];
+                    let username = document.createElement("p");
+                    username.setAttribute("id","user");
+                    document.getElementById("users").appendChild(document.createTextNode(user));
+                    document.getElementById("users").appendChild(username);
+                    document.getElementById("users").appendChild(document.createElement("br"));}
+                   
+                }
+            });
+            socketio.on("you_need_leave_room",function(data){
+                if(current_user==data){
+                    socketio.emit("changeRoom_to_sever",{user:current_user, to_room:"home", leave_room:current_room});
+                    alert("The admin evicts you from the room!");
+                }
+            });
+            socketio.on("to_fail",function(data){
+                alert(data['to']+" is not in this room. See the user list.")
+            });
+            socketio.on("require_pass_to_client", function(data){
+                $("#password_div").dialog();
+            });
+            socketio.on("wrong_pass", function(data){
+                alert("Wrong password! Try again!");
+                socketio.emit("update_all",{room:current_room} );
+                
+            });
+            socketio.on("success_ban", function(data){
+                alert(data);
+            });
+            socketio.on("ban_cannot_join", function(data){
+                alert(data);
+                socketio.emit("request_room_list", {});
+            });
+            socketio.on("send_invitaion_to_client",function(data){
+                if(data['user']==current_user){
+                let inv = document.getElementById("invitation_content");
+                inv.textContent=data['host']+" invite you to room "+data['room'];
+                $("#invitation").dialog();
+                }
+            });
+            socketio.on("repeat_table", function(data){
+                alert(data);
+                
+            });
+            socketio.on("repeat_user", function(data){
+                alert(data);
+                
+            });
+      
+            function sendMessage(){
+               let msg = document.getElementById("send_mesg").value;
+               let to = document.getElementById("to_someone").value;
+
+               socketio.emit("message_to_server", {message:msg , user: current_user, room:current_room, to:to });
+            }
+
+            function changeRoom(){
+                let rooms = document.getElementById("rooms")
+                let to_room = null;
+
+                for(i in rooms){
+                    if(rooms[i].checked){
+                        to_room = rooms[i].getAttribute('id');
+                        break;
+                    }
+                }
+                if(to_room!=null){
+                
+                socketio.emit("changeRoom_to_sever",{user:current_user, to_room:to_room, leave_room:current_room});
+                }
+                
+            }
+            function createDialog(){
+                $("#create_new_room_dialog").dialog();
+            }
+            function createNew(){
+                $("#create_new_room_dialog").dialog('close');
+                let password=document.getElementById("password").value;
+                let roomname=document.getElementById("roomname").value;
+                
+                socketio.emit("createNew_to_sever", {admin: current_user, password:password, room: roomname});
+            }
+            function checkPass(){
+                $("#password_div").dialog('close');
+                let password = document.getElementById("guess_pass").value;
+                let to_room = null;
+
+                for(i in rooms){
+                    if(rooms[i].checked){
+                        to_room = rooms[i].getAttribute('id');
+                        break;
+                    }
+                }
+                
+
+                socketio.emit("changeRoom_pass_to_sever",{user:current_user, to_room:to_room, leave_room:current_room, pass:password});
+
+            }
+            function ban(){
+                let box = document.getElementById("ban").checked;
+                if(box){
+                    socketio.emit("room_close", {room:current_room, ban:true});
+                }else{
+                    socketio.emit("room_close",{room:current_room, ban:false});
+                }
+            }
+            function kick(user){
+                
+                socketio.emit("kick_to_sever",{user:user, room:current_room});
+            }
+            
+            $(document).ready(function(){
+            $(window).bind("beforeunload", function() { 
+            if(current_user!=null){  
+             confirm("Do you really want to close?"); }
+            return socketio.emit("leave_the_page",{user:current_user,room:current_room});
+                });
+            });
+            function invite(){
+                socketio.emit("request_user_list", {room:"home", invite:true});
+            }
+            function sendInvitation(){
+                $("#invite_list_div").dialog('close');
+                let list=document.getElementById("invite_list");
+                let userlist=list.getElementsByClassName("class");
+                let invitelist = [];
+                
+                for(i in userlist){
+                    let bool = userlist[i].checked;
+                    if(bool){
+                        invitelist.push(userlist[i].getAttribute('id'));
+                    }
+                }
+                
+                for(i in invitelist){
+                    socketio.emit("send_invitation_to_sever",{user:invitelist[i],room:current_room, host:current_user});
+                }
+            }
+            function yes(){
+                console.log("accept");
+                $("#invitation").dialog('close');
+                let r = document.getElementById("invitation_content");
+                let ro = r.textContent;
+                let roo = ro.split(" ");
+                let room = roo[roo.length-1];
+                to_room_pass=room;
+                console.log(room);
+                socketio.emit("changeRoom_to_sever",{user:current_user, to_room:room, leave_room:current_room});
+            }
+            function reject(){
+                console.log("reject");
+                $("#invitation").dialog('close');
+            }
+
+            </script>
+     
+    
+    <style>
+        #room_list_div { display:none }
+        #user_list_div{ display:none }
+        #dialog_div{ display:none }
+        #input_div{ display:none }
+        #welcome {display: none}
+        #invite {display: none}
+        #invite_list_div {display: none}
+        #create_new_room_dialog{display:none}
+        #password_div{display: none}
+        #admin_stuff{display: none}
+        #invitation{display:none}
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Chat</title>
+</head>
+
+<body>
+    <div>
+        <h1 id="welcome">Welcome </h1>
+        <input type="button" onclick="invite()" id="invite" value="invite">
+        <div id ="admin_stuff">
+                <input type="checkbox" onchange="ban()" id="ban" />Ban  
+        </div>
+    </div>
+    
+    <div class = "login" id="login_div">
+        Username:<input type="text" id="user"/>
+        <br>
+        <input type="button" onclick="login()" value="log in"> 
+
+    </div>
+
+    <div class="room_list" id="room_list_div" >
+        <h1>Room:</h1>
+        <input onclick="createDialog()" type="button" value="Create New Room"/>
+        <form id="rooms"></form>
+    </div>
+
+    <div class="user_list" id = "user_list_div" >
+        <h1>Users:</h1>
+        <div id="users"></div>
+    </div>
+
+    <div class = "input" id="input_div" >
+            <input type="text" id="send_mesg"/>
+            <input type="button" onclick="sendMessage()" value="Send Message"/>
+            to:(optional)<input type="text" id="to_someone">
+        </div>
+    <div class = "chat" id="chat_div" ></div>
+
+    
+
+    <div id = "create_new_room_dialog">
+        Room:<input type="text" id="roomname"/>
+        <br>
+        Password(optional):<input type="text" id="password"/>
+        <br>
+        <input type="button" onclick="createNew()" value="create new room"/>
+    </div>
+    <div id = "password_div">
+        Require password:<input type="text" id="guess_pass"/>
+        <br>
+        <input type="button" onclick="checkPass()" value="submit"/>
+    </div>
+
+    <div id = "invite_list_div">
+        <form id = "invite_list">
+        </form>
+        <input type="button" onclick="sendInvitation()" value="Send Invitation"/>
+        
+    </div>
+    <div id="invitation">
+        <div id="invitation_content"></div>
+        
+        
+        <input type="button" value="Yes" onclick="yes()" />
+
+        <input type="button" value="No" onclick="reject()"/>
+    </div>
+
+</body>
+</html>

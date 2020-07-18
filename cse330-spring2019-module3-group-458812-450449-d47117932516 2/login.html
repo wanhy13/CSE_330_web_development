@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+   <style>
+    input[type=text], select {
+        width: 30%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      ​
+      input[type=submit] {
+        width: 100%;
+        background-color: #4CAF50;
+      }
+      </style>  
+    <title>login page</title>
+</head>
+
+<body>
+    
+    <center>
+        <h3>Login Here!</h3>
+        <form action="login.php" method="POST">
+            <label>Username: <input type="text" name="username" /></label>
+            <br>
+            <lable>Password: <input type="text" name="password"></lable>
+            <br>
+            <input type="submit" value="login" style="width:20%">
+        
+        </form>
+        <?php
+        if($_POST['password']==$_POST['comfirm_password']){
+            
+        }
+        ?>
+        <br>
+        <br>
+        <br>
+        <a href="newusers.php"> Register New Account?</a>
+        <br>
+        <br>
+        <br>
+        <a href="mainpage.php"> Login as Guest</a>
+    </center>
+</body>
+</html>
