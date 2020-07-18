@@ -1,0 +1,17 @@
+
+extends layout
+
+block content
+  h1 #{title}
+  form(method='POST', action='/posts/add')
+    a.btn.btn-primary(href="/upload") Add Photo
+    if file
+        input(name='file' value=file type='text')
+        br
+        img(src='../'+file width=300 height=300)
+        br
+    #form-group
+      label Body:
+      textarea.form-control(name='content')
+    br
+    input.btn.btn-primary(type='submit',value='Submit')

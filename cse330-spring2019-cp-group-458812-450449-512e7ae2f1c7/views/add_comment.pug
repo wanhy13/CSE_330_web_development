@@ -1,0 +1,13 @@
+extends layout
+
+block content
+    h1 Add comment
+   
+    form(method='POST',action='/comments/add/'+title)
+       
+        #form-Group
+            label Content:
+            textarea.form-control(name='content')
+        br
+        input.btn.btn-primary(type='submit',value='Submit')
+

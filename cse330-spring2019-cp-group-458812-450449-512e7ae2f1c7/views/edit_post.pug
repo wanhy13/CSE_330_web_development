@@ -1,0 +1,22 @@
+extends layout
+
+block content
+    h1 Edit 
+    form(method='POST',action='/posts/edit/'+post._id)
+        a.btn.btn-primary(href="/upload/"+post._id) Choose Photo
+        if file
+            input(name='file' value=file type='text')
+            br
+            img(src=file width=300 height=300)
+            br
+        else if post.photo
+            input(name='file' value=post.photo type='text')
+            br
+            img(src='../../'+post.photo width=300 height=300)
+            br
+        #form-Group
+            label Content:
+            textarea.form-control(name='content' )=post.content
+        br
+        input.btn.btn-primary(type='submit',value='Submit')
+

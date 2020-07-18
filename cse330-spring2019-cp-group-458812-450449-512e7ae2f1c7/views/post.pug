@@ -1,0 +1,28 @@
+extends layout
+block content
+
+    h1=post.content 
+    h5 Written by #{author}
+    h5 #{post.likelist.length} like this post
+    if post.photo
+        img(src='../'+post.photo width=300 height=300)
+       
+
+    hr
+    if user
+        if user.id==post.author
+            a.btn.btn-primary(href='/posts/edit/'+post._id) Edit
+            a.btn.btn-danger.delete-post(href='#',data-id = post._id) Delete
+        else
+            a.btn.btn-primary.likeit(href='#',data-id = post._id) Like
+            a.btn.btn-primary.unlikeit(href='#',data-id = post._id) Unlike
+            a.btn.btn-primary(href='/comments/add/'+post._id) Add Comment
+    br
+    br
+    div 
+       ul.list-group
+        each comment, i in comments
+            li.list-group-item
+                p= comment.authorname+":  "+comment.content
+                if user && (user.id==comment.author||user.id==post.author)
+                    a.btn.btn-primary.deletecomment(href='#',data-id = comment._id) Delete
